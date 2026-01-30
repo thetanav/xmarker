@@ -59,13 +59,90 @@
   gap: 6px;
 }
 
-.highlight-item {
+.url-group {
   background: #1d2a36;
   border-radius: 6px;
-  padding: 10px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.url-group:last-child {
+  margin-bottom: 0;
+}
+
+.url-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.url-group-header:hover {
+  background: #273340;
+}
+
+.url-group-header .url-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.url-group-header .url-domain {
+  font-size: 12px;
+  font-weight: 500;
+  color: #f7f9f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.url-group-header .url-count {
+  font-size: 10px;
+  background: #1d9bf0;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.url-group-header .toggle-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s ease;
+  color: #8b98a5;
+}
+
+.url-group.collapsed .url-group-header .toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.url-group.collapsed .url-group-content {
+  display: none;
+}
+
+.url-group-content {
+  padding: 0 6px 6px;
+  border-top: 1px solid #38444d20;
+  margin-top: -1px;
+}
+
+.highlight-item {
+  background: #15202b;
+  border-radius: 4px;
+  padding: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   border: 1px solid transparent;
+  margin-top: 6px;
+}
+
+.highlight-item:first-child {
+  margin-top: 0;
 }
 
 .highlight-item:hover {
@@ -170,6 +247,32 @@
   background: rgba(244, 33, 46, 0.2);
 }
 
+.btn-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: #273340;
+  color: #f7f9f9;
+  text-decoration: none;
+}
+
+.btn-profile:hover {
+  background: #38444d;
+}
+
+.btn-profile svg {
+  width: 14px;
+  height: 14px;
+}
+
 .toast {
   position: fixed;
   bottom: 12px;
@@ -207,12 +310,6 @@
     <div class="highlight-list" id="highlight-list"></div>
 
     <div class="actions">
-      <button class="btn btn-primary" id="view-all-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-        </svg>
-        View All
-      </button>
       <button class="btn btn-secondary" id="export-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -228,6 +325,12 @@
         </svg>
         Clear All
       </button>
+      <a href="https://x.com/tanavtwt" target="_blank" class="btn btn-profile">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+        @tanavtwt
+      </a>
     </div>
   </div>
 
@@ -242,10 +345,6 @@
     });
 
     function setupActions() {
-      document.getElementById('view-all-btn').addEventListener('click', () => {
-        chrome.tabs.create({ url: chrome.runtime.getURL('highlights.html') });
-      });
-
       document.getElementById('export-btn').addEventListener('click', exportHighlights);
       document.getElementById('clear-all-btn').addEventListener('click', clearAllHighlights);
     }
@@ -253,12 +352,20 @@
     function loadHighlights() {
       chrome.storage.local.get([STORAGE_KEY], (result) => {
         const highlights = result[STORAGE_KEY] || [];
-        const currentUrl = window.location.href;
-        const pageHighlights = highlights.filter(h => h.url === currentUrl);
-
+        console.log('Loaded highlights:', highlights.length);
         document.getElementById('stats').textContent = highlights.length;
-        renderHighlights(pageHighlights);
+        renderHighlights(highlights);
       });
+    }
+
+    function getDomain(url) {
+      try {
+        if (!url) return 'Unknown';
+        const u = new URL(url);
+        return u.hostname;
+      } catch {
+        return 'Unknown';
+      }
     }
 
     function renderHighlights(highlights) {
@@ -271,29 +378,65 @@
               <path d="M9 11L12 14L22 4"></path>
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
             </svg>
-            <p>No highlights on this page</p>
+            <p>No highlights yet</p>
           </div>
         `;
         return;
       }
 
-      list.innerHTML = highlights.map(h => `
-        <div class="highlight-item" data-id="${h.id}">
-          <div class="highlight-text">${escapeHtml(h.text || '')}</div>
-          <div class="highlight-meta">
-            <span class="highlight-color" style="background: ${h.color || '#87CEEB80'}"></span>
-            <span>${formatDate(h.timestamp)}</span>
+      const grouped = highlights.reduce((acc, h) => {
+        const domain = getDomain(h.url);
+        if (!acc[domain]) acc[domain] = [];
+        acc[domain].push(h);
+        return acc;
+      }, {});
+
+      list.innerHTML = Object.entries(grouped).map(([domain, items]) => `
+        <div class="url-group" data-domain="${escapeHtml(domain)}">
+          <div class="url-group-header">
+            <div class="url-info">
+              <span class="url-domain">${escapeHtml(domain)}</span>
+              <span class="url-count">${items.length}</span>
+            </div>
+            <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="url-group-content">
+            ${items.map(h => `
+              <div class="highlight-item" data-id="${h.id}" data-url="${escapeHtml(h.url || '')}">
+                <div class="highlight-text">${escapeHtml(h.text || '')}</div>
+                <div class="highlight-meta">
+                  <span class="highlight-color" style="background: ${h.color || '#87CEEB80'}"></span>
+                  <span>${formatDate(h.timestamp)}</span>
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
       `).join('');
 
+      list.querySelectorAll('.url-group-header').forEach(header => {
+        header.addEventListener('click', () => {
+          header.parentElement.classList.toggle('collapsed');
+        });
+      });
+
       list.querySelectorAll('.highlight-item').forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
           const h = highlights.find(hl => hl.id === item.dataset.id);
           if (h) {
             navigator.clipboard.writeText(h.text).then(() => {
               showToast('Copied!');
             });
+          }
+        });
+
+        item.addEventListener('dblclick', () => {
+          const url = item.dataset.url;
+          if (url) {
+            chrome.tabs.create({ url });
           }
         });
       });
