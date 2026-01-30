@@ -51,6 +51,7 @@
 
 .content {
   padding: 12px;
+  min-height: 80px;
 }
 
 .highlight-list {
@@ -220,13 +221,13 @@
   height: 14px;
 }
 
-.btn-primary {
-  background: #1d9bf0;
-  color: white;
+.btn-danger {
+  background: rgba(244, 33, 46, 0.1);
+  color: #f4212e;
 }
 
-.btn-primary:hover {
-  background: #1a8cd8;
+.btn-danger:hover {
+  background: rgba(244, 33, 46, 0.2);
 }
 
 .btn-secondary {
@@ -236,6 +237,41 @@
 
 .btn-secondary:hover {
   background: #38444d;
+}
+
+.btn-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: #273340;
+  color: #f7f9f9;
+  text-decoration: none;
+}
+
+.btn-profile:hover {
+  background: #38444d;
+}
+
+.btn-profile svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-primary {
+  background: #1d9bf0;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #1a8cd8;
 }
 
 .btn-danger {
@@ -310,20 +346,19 @@
     <div class="highlight-list" id="highlight-list"></div>
 
     <div class="actions">
-      <button class="btn btn-secondary" id="export-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        Export
-      </button>
       <button class="btn btn-danger" id="clear-all-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
         </svg>
         Clear All
+      </button>
+      <button class="btn btn-secondary" id="refresh-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
       </button>
       <a href="https://x.com/tanavtwt" target="_blank" class="btn btn-profile">
         <svg viewBox="0 0 24 24" fill="currentColor">
@@ -345,14 +380,14 @@
     });
 
     function setupActions() {
-      document.getElementById('export-btn').addEventListener('click', exportHighlights);
       document.getElementById('clear-all-btn').addEventListener('click', clearAllHighlights);
+      document.getElementById('refresh-btn').addEventListener('click', loadHighlights);
     }
 
     function loadHighlights() {
       chrome.storage.local.get([STORAGE_KEY], (result) => {
         const highlights = result[STORAGE_KEY] || [];
-        console.log('Loaded highlights:', highlights.length);
+        console.log('Highlights loaded:', highlights.length, 'items');
         document.getElementById('stats').textContent = highlights.length;
         renderHighlights(highlights);
       });
@@ -379,6 +414,7 @@
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
             </svg>
             <p>No highlights yet</p>
+            <p style="font-size: 10px; margin-top: 4px; opacity: 0.7;">Select text on X.com and press Ctrl+H</p>
           </div>
         `;
         return;
@@ -459,25 +495,6 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
-    }
-
-    function exportHighlights() {
-      chrome.storage.local.get([STORAGE_KEY], (result) => {
-        const data = JSON.stringify(result[STORAGE_KEY] || [], null, 2);
-        navigator.clipboard.writeText(data).then(() => showToast('Copied to clipboard!'));
-      });
-    }
-
-    function clearAllHighlights() {
-      chrome.storage.local.set({ [STORAGE_KEY]: [] }, () => {
-        loadHighlights();
-        showToast('All highlights cleared');
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0] && (tabs[0].url.includes('x.com') || tabs[0].url.includes('twitter.com'))) {
-            chrome.tabs.sendMessage(tabs[0].id, { action: 'reloadHighlights' });
-          }
-        });
-      });
     }
 
     function showToast(message) {
