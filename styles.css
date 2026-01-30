@@ -1,0 +1,131 @@
+/* Highlight mark styling */
+.x-highlighter-mark {
+  background-color: #87CEEB80 !important;
+  display: inline;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.x-highlighter-mark:hover {
+  filter: brightness(1.1);
+}
+
+/* Minimal popup styling */
+#x-highlighter-popup {
+  position: absolute;
+  display: none;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 999999;
+  backdrop-filter: blur(10px);
+}
+
+#x-highlighter-popup button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #e0e0e0;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+#x-highlighter-popup button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#x-highlighter-popup button:active {
+  transform: scale(0.95);
+}
+
+#x-highlighter-popup button svg {
+  pointer-events: none;
+}
+
+#x-highlighter-popup .color-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 2px;
+}
+
+/* Hover options popup for existing highlights */
+#x-highlighter-options {
+  position: absolute;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(20, 20, 20, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 999998;
+  backdrop-filter: blur(10px);
+  min-width: 140px;
+  pointer-events: auto;
+}
+
+#x-highlighter-options .option-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #e0e0e0;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+#x-highlighter-options .option-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#x-highlighter-options .option-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+#x-highlighter-options .option-btn.danger:hover {
+  background: rgba(244, 33, 46, 0.2);
+  color: #f4212e;
+}
+
+#x-highlighter-options .color-options {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  flex-wrap: wrap;
+}
+
+#x-highlighter-options .color-option {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s ease;
+}
+
+#x-highlighter-options .color-option:hover {
+  transform: scale(1.15);
+}
+
+#x-highlighter-options .color-option.selected {
+  border-color: white;
+}

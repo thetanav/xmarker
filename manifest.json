@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "X Highlighter",
+  "version": "2.0",
+  "description": "Highlight and manage text on X.com (Twitter) with powerful organization features",
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "X Highlighter"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.x.com/*", "*://*.twitter.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "highlight-selection": {
+      "suggested_key": {
+        "default": "Ctrl+H",
+        "mac": "Command+H"
+      },
+      "description": "Highlight selected text"
+    },
+    "change-color": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "Cycle through highlight colors"
+    },
+    "remove-highlight": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+R",
+        "mac": "Command+Shift+R"
+      },
+      "description": "Remove highlight from selection"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["highlights.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

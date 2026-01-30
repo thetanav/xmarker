@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Highlights - X Highlighter</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #000000;
+      color: #f7f9f9;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    .header {
+      position: sticky;
+      top: 0;
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(12px);
+      padding: 12px 20px;
+      border-bottom: 1px solid #2f3336;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 100;
+    }
+
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header h1 svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .stats {
+      font-size: 13px;
+      color: #71767b;
+      margin-left: auto;
+    }
+
+    .search-input {
+      flex: 1;
+      max-width: 300px;
+      background: #16181c;
+      border: 1px solid #2f3336;
+      border-radius: 20px;
+      padding: 10px 16px;
+      color: #f7f9f9;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #1d9bf0;
+    }
+
+    .search-input::placeholder {
+      color: #71767b;
+    }
+
+    .filters {
+      display: flex;
+      gap: 6px;
+      padding: 10px 20px;
+      background: #16181c;
+      border-bottom: 1px solid #2f3336;
+      overflow-x: auto;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      border: 1px solid #2f3336;
+      background: transparent;
+      color: #71767b;
+    }
+
+    .filter-btn:hover {
+      background: #1d1f23;
+    }
+
+    .filter-btn.active {
+      background: #1d9bf0;
+      border-color: #1d9bf0;
+      color: white;
+    }
+
+    .content {
+      padding: 20px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .highlight-card {
+      background: #16181c;
+      border: 1px solid #2f3336;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .highlight-card:hover {
+      background: #1d1f23;
+      border-color: #3f4347;
+    }
+
+    .highlight-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: #71767b;
+    }
+
+    .color-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .highlight-text {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    .highlight-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .highlight-url {
+      font-size: 13px;
+      color: #1d9bf0;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .highlight-url:hover {
+      text-decoration: underline;
+    }
+
+    .highlight-date {
+      font-size: 12px;
+      color: #71767b;
+    }
+
+    .actions-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #2f3336;
+    }
+
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .delete-btn {
+      background: rgba(244, 33, 46, 0.1);
+      color: #f4212e;
+    }
+
+    .delete-btn:hover {
+      background: rgba(244, 33, 46, 0.2);
+    }
+
+    .copy-btn {
+      background: rgba(29, 155, 240, 0.1);
+      color: #1d9bf0;
+    }
+
+    .copy-btn:hover {
+      background: rgba(29, 155, 240, 0.2);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #71767b;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state h2 {
+      font-size: 18px;
+      margin-bottom: 6px;
+      color: #f7f9f9;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #f7f9f9;
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.2s ease;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 11L12 14L22 4"></path>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+      </svg>
+      All Highlights
+    </h1>
+    <input type="text" class="search-input" id="search-input" placeholder="Search...">
+    <span class="stats" id="stats">0</span>
+  </header>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="today">Today</button>
+    <button class="filter-btn" data-filter="week">Week</button>
+    <button class="filter-btn" data-filter="month">Month</button>
+  </div>
+
+  <div class="content" id="content"></div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'x_highlighter_data';
+
+    let allHighlights = [];
+    let filteredHighlights = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      setupSearch();
+      setupFilters();
+      loadHighlights();
+    }
+
+    function setupSearch() {
+      document.getElementById('search-input').addEventListener('input', (e) => {
+        searchQuery = e.target.value.toLowerCase();
+        applyFilters();
+      });
+    }
+
+    function setupFilters() {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.filter;
+          applyFilters();
+        });
+      });
+    }
+
+    function loadHighlights() {
+      chrome.storage.local.get([STORAGE_KEY], (result) => {
+        allHighlights = result[STORAGE_KEY] || [];
+        allHighlights.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        applyFilters();
+      });
+    }
+
+    function applyFilters() {
+      let filtered = [...allHighlights];
+
+      if (currentFilter !== 'all') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+        filtered = filtered.filter(h => {
+          const date = new Date(h.timestamp || 0);
+          if (currentFilter === 'today') return date >= today;
+          if (currentFilter === 'week') return date >= weekAgo;
+          if (currentFilter === 'month') return date >= monthAgo;
+          return true;
+        });
+      }
+
+      if (searchQuery) {
+        filtered = filtered.filter(h =>
+          (h.text || '').toLowerCase().includes(searchQuery) ||
+          (h.url || '').toLowerCase().includes(searchQuery)
+        );
+      }
+
+      filteredHighlights = filtered;
+      renderHighlights();
+    }
+
+    function renderHighlights() {
+      const content = document.getElementById('content');
+      document.getElementById('stats').textContent = allHighlights.length;
+
+      if (filteredHighlights.length === 0) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11L12 14L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <h2>No highlights</h2>
+            <p>${searchQuery ? 'Try a different search' : 'Start highlighting on X.com'}</p>
+          </div>
+        `;
+        return;
+      }
+
+      content.innerHTML = filteredHighlights.map(h => {
+        try {
+          const url = new URL(h.url || 'https://x.com');
+          return `
+            <div class="highlight-card" data-id="${h.id}">
+              <div class="highlight-header">
+                <span class="color-dot" style="background: ${h.color || '#87CEEB80'}"></span>
+                <span>${url.hostname}</span>
+                <span>·</span>
+                <span>${formatDate(h.timestamp)}</span>
+              </div>
+              <div class="highlight-text">${escapeHtml(h.text || '')}</div>
+              <div class="highlight-footer">
+                <a href="${h.url || '#'}" target="_blank" class="highlight-url" onclick="event.stopPropagation();">
+                  View Tweet
+                </a>
+                <span class="highlight-date">${formatDate(h.timestamp)}</span>
+              </div>
+              <div class="actions-row">
+                <button class="action-btn copy-btn" onclick="copyHighlight('${escapeJs(h.text || '')}', event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  Copy
+                </button>
+                <button class="action-btn delete-btn" onclick="deleteHighlight('${h.id}', event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          `;
+        } catch (e) {
+          return '';
+        }
+      }).join('');
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      if (days === 0) return 'Today';
+      if (days === 1) return 'Yesterday';
+      if (days < 7) return `${days}d ago`;
+      return date.toLocaleDateString();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function escapeJs(text) {
+      return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+    }
+
+    window.copyHighlight = function(text, event) {
+      event.stopPropagation();
+      navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+    };
+
+    window.deleteHighlight = function(id, event) {
+      event.stopPropagation();
+      if (confirm('Delete this highlight?')) {
+        chrome.storage.local.get([STORAGE_KEY], (result) => {
+          let highlights = result[STORAGE_KEY] || [];
+          highlights = highlights.filter(h => h.id !== id);
+          chrome.storage.local.set({ [STORAGE_KEY]: highlights }, () => {
+            allHighlights = highlights;
+            applyFilters();
+            showToast('Deleted');
+
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+              if (tabs[0] && (tabs[0].url.includes('x.com') || tabs[0].url.includes('twitter.com'))) {
+                chrome.tabs.sendMessage(tabs[0].id, { action: 'reloadHighlights' });
+              }
+            });
+          });
+        });
+      }
+    };
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+</html>
