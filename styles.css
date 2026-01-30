@@ -1,6 +1,6 @@
 /* Highlight mark styling */
 .x-highlighter-mark {
-  background-color: #87CEEB80 !important;
+  background-color: #87CEEB80;
   display: inline;
   cursor: pointer;
   transition: background-color 0.2s ease;

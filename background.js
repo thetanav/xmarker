@@ -11,3 +11,9 @@ chrome.action.onClicked.addListener((tab) => {
     chrome.tabs.sendMessage(tab.id, { action: 'openPopup' });
   }
 });
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'openTab') {
+    chrome.tabs.create({ url: message.url });
+  }
+});

@@ -69,13 +69,12 @@ function createOptionsPopup() {
       </svg>
       Copy
     </button>
-    <button class="option-btn" id="view-option">
+    <button class="option-btn" id="tweet-option">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-        <polyline points="15 3 21 3 21 9"></polyline>
-        <line x1="10" y1="14" x2="21" y2="3"></line>
+        <path d="M12 20h9"></path>
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
       </svg>
-      View Tweet
+      Create Tweet
     </button>
     <button class="option-btn danger" id="delete-option">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -92,7 +91,7 @@ function createOptionsPopup() {
   });
 
   optionsPopup.querySelector('#copy-option').addEventListener('click', copyHighlight);
-  optionsPopup.querySelector('#view-option').addEventListener('click', viewTweet);
+  optionsPopup.querySelector('#tweet-option').addEventListener('click', createTweet);
   optionsPopup.querySelector('#delete-option').addEventListener('click', deleteHighlight);
 }
 
@@ -158,25 +157,112 @@ function highlightSelection() {
   if (selectedText.length === 0) return;
 
   const highlightId = 'hl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  const span = document.createElement('span');
-  span.classList.add(HIGHLIGHT_CLASS);
-  span.dataset.highlightId = highlightId;
-  span.style.backgroundColor = currentHighlightColor;
+  const startContainer = range.startContainer;
+  const endContainer = range.endContainer;
 
-  const contents = range.extractContents();
-  span.appendChild(contents);
-  range.insertNode(span);
+  if (startContainer === endContainer && startContainer.nodeType === Node.TEXT_NODE) {
+    const span = document.createElement('span');
+    span.classList.add(HIGHLIGHT_CLASS);
+    span.dataset.highlightId = highlightId;
+    span.style.backgroundColor = currentHighlightColor;
 
-  span.animate([
-    { transform: 'scale(1.02)', opacity: '0.8' },
-    { transform: 'scale(1)', opacity: '1' }
-  ], { duration: 150, easing: 'ease-out' });
+    const contents = range.extractContents();
+    span.appendChild(contents);
+    range.insertNode(span);
 
-  addHighlightHoverListeners(span);
+    span.animate([
+      { transform: 'scale(1.02)', opacity: '0.8' },
+      { transform: 'scale(1)', opacity: '1' }
+    ], { duration: 150, easing: 'ease-out' });
 
-  saveHighlight(highlightId, selectedText);
+    addHighlightHoverListeners(span);
+    saveHighlight(highlightId, selectedText);
+  } else {
+    const spans = [];
+    processRange(range, highlightId, spans);
+    spans.forEach(span => {
+      span.animate([
+        { transform: 'scale(1.02)', opacity: '0.8' },
+        { transform: 'scale(1)', opacity: '1' }
+      ], { duration: 150, easing: 'ease-out' });
+      addHighlightHoverListeners(span);
+    });
+    saveHighlight(highlightId, selectedText);
+  }
+
   selection.removeAllRanges();
   popup.style.display = 'none';
+}
+
+function processRange(range, highlightId, spans) {
+  const startContainer = range.startContainer;
+  const endContainer = range.endContainer;
+  const startOffset = range.startOffset;
+  const endOffset = range.endOffset;
+
+  function processNode(node) {
+    if (node.nodeType !== Node.TEXT_NODE) return;
+
+    let nodeStart = 0;
+    let nodeEnd = node.textContent.length;
+
+    if (node === startContainer) nodeStart = startOffset;
+    if (node === endContainer) nodeEnd = endOffset;
+
+    if (nodeStart >= nodeEnd) return;
+
+    const nodeRange = document.createRange();
+    nodeRange.setStart(node, nodeStart);
+    nodeRange.setEnd(node, nodeEnd);
+
+    const span = document.createElement('span');
+    span.classList.add(HIGHLIGHT_CLASS);
+    span.dataset.highlightId = highlightId;
+    span.style.backgroundColor = currentHighlightColor;
+
+    const contents = nodeRange.extractContents();
+    span.appendChild(contents);
+    nodeRange.insertNode(span);
+
+    spans.push(span);
+  }
+
+  const walker = document.createTreeWalker(
+    range.commonAncestorContainer,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function (node) {
+        if (node.parentElement?.classList?.contains(HIGHLIGHT_CLASS)) {
+          return NodeFilter.FILTER_SKIP;
+        }
+
+        if (node === startContainer || node === endContainer) {
+          return NodeFilter.FILTER_ACCEPT;
+        }
+
+        const beforeStart = node.compareDocumentPosition(startContainer) & Node.DOCUMENT_POSITION_BEFORE_SELF;
+        const afterEnd = node.compareDocumentPosition(endContainer) & Node.DOCUMENT_POSITION_AFTER_SELF;
+
+        if (!beforeStart && !afterEnd) return NodeFilter.FILTER_ACCEPT;
+        return NodeFilter.FILTER_SKIP;
+      }
+    }
+  );
+
+  let node;
+  let started = false;
+  let ended = false;
+
+  while ((node = walker.nextNode())) {
+    if (node === startContainer) started = true;
+    if (node === endContainer) ended = true;
+
+    if (started && !ended) {
+      processNode(node);
+    }
+
+    if (ended) break;
+  }
 }
 
 function addHighlightHoverListeners(element) {
@@ -200,8 +286,10 @@ function showOptionsPopup(element) {
   optionsPopup.style.left = `${rect.left + window.scrollX + rect.width / 2 - 70}px`;
   optionsPopup.style.top = `${rect.bottom + window.scrollY - 4}px`;
 
+  const elementColor = normalizeColor(element.style.backgroundColor);
   optionsPopup.querySelectorAll('.color-option').forEach(opt => {
-    opt.classList.toggle('selected', opt.dataset.color === element.style.backgroundColor);
+    const optColor = normalizeColor(opt.dataset.color);
+    opt.classList.toggle('selected', optColor === elementColor);
   });
 
   optionsPopup.dataset.highlightId = highlightId;
@@ -216,6 +304,13 @@ function showOptionsPopup(element) {
   };
 }
 
+function normalizeColor(color) {
+  if (!color) return '';
+  const div = document.createElement('div');
+  div.style.backgroundColor = color;
+  return div.style.backgroundColor;
+}
+
 function hideOptionsPopup() {
   optionsPopup.style.display = 'none';
   hoveredHighlight = null;
@@ -227,8 +322,10 @@ function changeHighlightColor(color) {
     const highlightId = hoveredHighlight.dataset.highlightId;
     updateHighlightColor(highlightId, color);
 
+    const normalizedColor = normalizeColor(color);
     optionsPopup.querySelectorAll('.color-option').forEach(opt => {
-      opt.classList.toggle('selected', opt.dataset.color === color);
+      const optColor = normalizeColor(opt.dataset.color);
+      opt.classList.toggle('selected', optColor === normalizedColor);
     });
   }
 }
@@ -240,21 +337,19 @@ function copyHighlight() {
   }
 }
 
-function viewTweet() {
+function createTweet() {
   if (hoveredHighlight) {
-    chrome.storage.local.get([STORAGE_KEY], (result) => {
-      const highlights = result[STORAGE_KEY] || [];
-      const highlight = highlights.find(h => h.id === hoveredHighlight.dataset.highlightId);
-      if (highlight && highlight.url) {
-        chrome.tabs.create({ url: highlight.url });
-      }
-      hideOptionsPopup();
-    });
+    event.stopPropagation();
+    const text = hoveredHighlight.textContent.trim();
+    const tweetText = encodeURIComponent(`"${text}"`);
+    const tweetUrl = `https://x.com/intent/post?text=${tweetText}`;
+    chrome.runtime.sendMessage({ action: 'openTab', url: tweetUrl });
+    hideOptionsPopup();
   }
 }
 
 function deleteHighlight() {
-  if (hoveredHighlight && confirm('Delete this highlight?')) {
+  if (hoveredHighlight) {
     const highlightId = hoveredHighlight.dataset.highlightId;
     const parent = hoveredHighlight.parentNode;
     while (hoveredHighlight.firstChild) {
@@ -318,39 +413,64 @@ function restoreHighlight(highlight) {
     const highlightId = highlight.id;
     const color = highlight.color || currentHighlightColor;
 
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_ELEMENT,
-      {
-        acceptNode: function (node) {
-          return node.textContent.trim() === text ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-        }
-      }
-    );
+    if (document.querySelector(`[data-highlight-id="${highlightId}"]`)) {
+      return;
+    }
 
-    const element = walker.nextNode();
-    if (element && !element.dataset.highlightId) {
+    const segments = text.split('\n\n').map(s => s.trim()).filter(s => s.length > 0);
+
+    if (segments.length === 0) return;
+
+    if (segments.length === 1) {
+      restoreTextSegment(segments[0], highlightId, color);
+    } else {
+      segments.forEach(segment => {
+        restoreTextSegment(segment, highlightId, color);
+      });
+    }
+  } catch (e) {
+    console.error('Failed to restore highlight:', e);
+  }
+}
+
+function restoreTextSegment(segmentText, highlightId, color) {
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function (node) {
+        if (node.parentElement?.classList?.contains(HIGHLIGHT_CLASS)) {
+          return NodeFilter.FILTER_SKIP;
+        }
+        return node.textContent.includes(segmentText) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+      }
+    }
+  );
+
+  let node;
+  while ((node = walker.nextNode())) {
+    const fullText = node.textContent;
+    let index = fullText.indexOf(segmentText);
+
+    if (index !== -1) {
+      const range = document.createRange();
+      range.setStart(node, index);
+      range.setEnd(node, index + segmentText.length);
+
       const span = document.createElement('span');
       span.classList.add(HIGHLIGHT_CLASS);
       span.dataset.highlightId = highlightId;
       span.style.backgroundColor = color;
 
-      const textNode = element.firstChild;
-      if (textNode && textNode.textContent.includes(text)) {
-        const index = textNode.textContent.indexOf(text);
-        const range = document.createRange();
-        range.setStart(textNode, index);
-        range.setEnd(textNode, index + text.length);
+      const contents = range.extractContents();
+      span.appendChild(contents);
+      range.insertNode(span);
 
-        const contents = range.extractContents();
-        span.appendChild(contents);
-        range.insertNode(span);
-        addHighlightHoverListeners(span);
-      }
+      addHighlightHoverListeners(span);
+      return true;
     }
-  } catch (e) {
-    console.error('Failed to restore highlight:', e);
   }
+  return false;
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
